@@ -31,7 +31,7 @@ const app = l('div', [mainbox, border, pad5], [
             }
         })
     ]),
-    l('div', [border, pad5, fullheight], [
+    l('div', [border, pad5, fullheight, { overflow: 'scroll' }], [
         l('div', [], [
             l('span', [], ['Matching']),
             listMatch,
