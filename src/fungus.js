@@ -1,4 +1,4 @@
-const { close, pointer, border, playlistEven, playlistOdd, padside } = require('./styles');
+const { close, pointer, border, playlistEven, playlistOdd, padside, musicname } = require('./styles');
 
 function setStyle(elem, ...styles) {
     for (const style of styles) {
@@ -16,6 +16,7 @@ function muse(onchange) {
     const elem = document.createElement('input');
     elem.type = 'file';
     elem.accept = '.mp3'
+    elem.multiple = true;
     elem.style.display = 'none';
     if (onchange) {
         elem.addEventListener('change', onchange);
@@ -54,9 +55,10 @@ function refreshMusic(props) {
         list.appendChild(l('li', [], ['-']));
     } else {
         bgm.forEach(function (bg, i) {
-            const even = i % 2 !== 0;
+            const even = i % 2 === 0;
             list.appendChild(l('li', [even ? playlistEven : playlistOdd], [
-                bg, l('span', [close, pointer, border, padside], ['X'], {
+                l('div', [musicname], [bg]),
+                l('span', [close, pointer, padside], ['X'], {
                     click: function () {
                         bgm.splice(i, 1);
                         refreshMusic(props);
@@ -65,7 +67,6 @@ function refreshMusic(props) {
             ]));
             const audio = document.createElement('audio');
             audio.src = 'http://localhost:9696/' + path + '/' + bg;
-            audio.loop = true;
             if (path === 'playing') {
                 audio.volume = 0.3;
             }
@@ -74,7 +75,15 @@ function refreshMusic(props) {
         });
     }
 }
+function addMuseh(props) {
+    return function (ev) {
+        for (const file of ev.target.files) {
+            props.bgm.push(file.name);
+        }
+        refreshMusic(props);    
+    }
+}
 
 module.exports = {
-    addEvent, l, muse, setStyle, rando, refreshMusic
+    addEvent, addMuseh, l, muse, setStyle, rando, refreshMusic
 }

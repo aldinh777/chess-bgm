@@ -1,5 +1,69 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const { close, pointer, border, playlistEven, playlistOdd, padside } = require('./styles');
+const { refreshMusic, rando } = require("./fungus");
+
+function initiateBackgroundMusic(propsmatching, propsplaying) {
+    refreshMusic(propsmatching);
+    refreshMusic(propsplaying);
+    let audio;
+    function theTimeHasCome() {
+        document.querySelectorAll('button').forEach(b => {
+            const text = b.textContent.toLowerCase();
+            const len = propsmatching.bgms.length;
+            if (text.match('play') || text.match('new')) {
+                const clickList = () => {
+                    audio = propsmatching.bgms[rando(len)];
+                    audio.currentTime = 0;
+                    audio.play();
+                    function whenended() {
+                        audio.removeEventListener('ended', whenended);
+                        audio = propsmatching.bgms[rando(len)];
+                        audio.currentTime = 0;
+                        audio.play();
+                        audio.addEventListener('ended', whenended);                        
+                    }
+                    audio.addEventListener('ended', whenended);
+                    b.removeEventListener('click', clickList);
+                    const intern = setInterval(() => {
+                        const chat = document.querySelector('.chat-scroll-area-component');
+                        if (chat.lastElementChild.textContent.toLowerCase().match('new game')) {
+                            clearInterval(intern);
+                            audio.pause();
+                            audio.removeEventListener('ended', whenended);
+                            const lenp = propsplaying.bgms.length;
+                            audio = propsplaying.bgms[rando(lenp)];
+                            audio.currentTime = 0;
+                            audio.play();
+                            function whenplayingended() {
+                                audio.removeEventListener('ended', whenplayingended);
+                                audio = propsplaying.bgms[rando(lenp)];
+                                audio.currentTime = 0;
+                                audio.play();    
+                                audio.addEventListener('ended', whenplayingended);
+                            }
+                            audio.addEventListener('ended', whenplayingended);
+                            const lintern = setInterval(() => {
+                                const chat = document.querySelector('.chat-scroll-area-component');
+                                if (chat.lastElementChild.textContent.toLowerCase().match('good sport')) {
+                                    clearInterval(lintern);
+                                    audio.pause();
+                                    audio.removeEventListener('ended', whenplayingended);
+                                    theTimeHasCome();
+                                }
+                            });
+                        }
+                    }, 100);
+                };
+                b.addEventListener('click', clickList);
+            }
+        });
+    }
+    theTimeHasCome();
+}
+
+module.exports = { initiateBackgroundMusic };
+
+},{"./fungus":2}],2:[function(require,module,exports){
+const { close, pointer, border, playlistEven, playlistOdd, padside, musicname } = require('./styles');
 
 function setStyle(elem, ...styles) {
     for (const style of styles) {
@@ -17,6 +81,7 @@ function muse(onchange) {
     const elem = document.createElement('input');
     elem.type = 'file';
     elem.accept = '.mp3'
+    elem.multiple = true;
     elem.style.display = 'none';
     if (onchange) {
         elem.addEventListener('change', onchange);
@@ -55,9 +120,10 @@ function refreshMusic(props) {
         list.appendChild(l('li', [], ['-']));
     } else {
         bgm.forEach(function (bg, i) {
-            const even = i % 2 !== 0;
+            const even = i % 2 === 0;
             list.appendChild(l('li', [even ? playlistEven : playlistOdd], [
-                bg, l('span', [close, pointer, border, padside], ['X'], {
+                l('div', [musicname], [bg]),
+                l('span', [close, pointer, padside], ['X'], {
                     click: function () {
                         bgm.splice(i, 1);
                         refreshMusic(props);
@@ -66,7 +132,6 @@ function refreshMusic(props) {
             ]));
             const audio = document.createElement('audio');
             audio.src = 'http://localhost:9696/' + path + '/' + bg;
-            audio.loop = true;
             if (path === 'playing') {
                 audio.volume = 0.3;
             }
@@ -75,35 +140,55 @@ function refreshMusic(props) {
         });
     }
 }
+function addMuseh(props) {
+    return function (ev) {
+        for (const file of ev.target.files) {
+            props.bgm.push(file.name);
+        }
+        refreshMusic(props);    
+    }
+}
 
 module.exports = {
-    addEvent, l, muse, setStyle, rando, refreshMusic
+    addEvent, addMuseh, l, muse, setStyle, rando, refreshMusic
 }
-},{"./styles":3}],2:[function(require,module,exports){
+},{"./styles":4}],3:[function(require,module,exports){
 const {
     border, center, close, fullheight, mainbox, navbar, pad5, padside, playlist, pointer
 } = require('./styles');
-const { l, muse, refreshMusic, rando } = require('./fungus');
+const { l, muse, addMuseh } = require('./fungus');
+const { initiateBackgroundMusic } = require('./chessfun');
 
 const localmatchbgm = localStorage.getItem('matchbgm') || '[]';
 const localplaybgm = localStorage.getItem('playbgm') || '[]';
 const matchbgm = JSON.parse(localmatchbgm);
 const playbgm = JSON.parse(localplaybgm);
-
-const inputMatch = muse(function (ev) {
-    const file = ev.target.files[0].name;
-    matchbgm.push(file);
-    refreshMusic(propsmatching);
-});
-const inputBgm = muse(function (ev) {
-    const file = ev.target.files[0].name;
-    playbgm.push(file);
-    refreshMusic(propsplaying);
-});
 const listMatch = l('ul', [playlist], []);
 const listBgm = l('ul', [playlist], []);
 const musicMatch = document.createElement('div');
 const musicBgm = document.createElement('div');
+
+const propsmatching = {
+    id: 'matchbgm',
+    bgm: matchbgm,
+    bgms: [],
+    list: listMatch,
+    music: musicMatch,
+    bbm: matchbgm,
+    path: 'matching',
+};
+const propsplaying = {
+    id: 'playbgm',
+    bgm: playbgm,
+    bgms: [],
+    list: listBgm,
+    music: musicBgm,
+    bbm: playbgm,
+    path: 'playing',
+};
+
+const inputMatch = muse(addMuseh(propsmatching));
+const inputBgm = muse(addMuseh(propsplaying));
 const app = l('div', [mainbox, border, pad5], [
     l('div', [navbar], [
         l('span', [], ['Chess BGM']),
@@ -143,68 +228,11 @@ const app = l('div', [mainbox, border, pad5], [
     ])
 ]);
 
-const propsmatching = {
-    id: 'matchbgm',
-    bgm: matchbgm,
-    bgms: [],
-    list: listMatch,
-    music: musicMatch,
-    bbm: matchbgm,
-    path: 'matching',
-};
-const propsplaying = {
-    id: 'playbgm',
-    bgm: playbgm,
-    bgms: [],
-    list: listBgm,
-    music: musicBgm,
-    bbm: playbgm,
-    path: 'playing',
-};
-
-refreshMusic(propsmatching);
-refreshMusic(propsplaying);
-
 document.body.appendChild(app);
 
-let audio;
-function theTimeHasCome() {
-    document.querySelectorAll('button').forEach(b => {
-        const text = b.textContent.toLowerCase();
-        const len = propsmatching.bgms.length;
-        if (text.match('play') || text.match('new')) {
-            const clickList = () => {
-                audio = propsmatching.bgms[rando(len)];
-                audio.currentTime = 0;
-                audio.play();
-                b.removeEventListener('click', clickList);
-                const intern = setInterval(() => {
-                    const chat = document.querySelector('.chat-scroll-area-component');
-                    if (chat.lastElementChild.textContent.toLowerCase().match('new game')) {
-                        clearInterval(intern);
-                        audio.pause();
-                        const lenp = propsplaying.bgms.length;
-                        audio = propsplaying.bgms[rando(lenp)];
-                        audio.currentTime = 0;
-                        audio.play();
-                        const lintern = setInterval(() => {
-                            const chat = document.querySelector('.chat-scroll-area-component');
-                            if (chat.lastElementChild.textContent.toLowerCase().match('good sport')) {
-                                clearInterval(lintern);
-                                audio.pause();
-                                theTimeHasCome();
-                            }
-                        });
-                    }
-                }, 100);
-            };
-            b.addEventListener('click', clickList);
-        }
-    });    
-}
-theTimeHasCome();
+initiateBackgroundMusic(propsmatching, propsplaying);
 
-},{"./fungus":1,"./styles":3}],3:[function(require,module,exports){
+},{"./chessfun":1,"./fungus":2,"./styles":4}],4:[function(require,module,exports){
 const close = {
     float: 'right',
     fontFamily: 'consolas'
@@ -241,6 +269,10 @@ const border = {
 const fullheight = {
     height: '280px'
 };
+const musicname = {
+    width: '90%',
+    display: 'inline-block'
+};
 const playlist = {
     margin: '7px 0px',
     listStyle: 'none',
@@ -265,6 +297,7 @@ module.exports = {
     close,
     fullheight,
     mainbox,
+    musicname,
     navbar,
     pad5,
     padside,
@@ -275,4 +308,4 @@ module.exports = {
     pointer
 };
 
-},{}]},{},[2]);
+},{}]},{},[3]);

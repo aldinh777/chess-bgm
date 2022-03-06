@@ -34,6 +34,10 @@ const border = {
 const fullheight = {
     height: '280px'
 };
+const musicname = {
+    width: '90%',
+    display: 'inline-block'
+};
 const playlist = {
     margin: '7px 0px',
     listStyle: 'none',
@@ -58,6 +62,7 @@ module.exports = {
     close,
     fullheight,
     mainbox,
+    musicname,
     navbar,
     pad5,
     padside,
