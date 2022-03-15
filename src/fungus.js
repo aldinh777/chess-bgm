@@ -1,4 +1,4 @@
-const { close, pointer, border, playlistEven, playlistOdd, padside, musicname } = require('./styles');
+const { playlistEven, playlistOdd, musicname } = require('./styles');
 
 function setStyle(elem, ...styles) {
     for (const style of styles) {
@@ -58,12 +58,6 @@ function refreshMusic(props) {
             const even = i % 2 === 0;
             list.appendChild(l('li', [even ? playlistEven : playlistOdd], [
                 l('div', [musicname], [bg]),
-                l('span', [close, pointer, padside], ['X'], {
-                    click: function () {
-                        bgm.splice(i, 1);
-                        refreshMusic(props);
-                    }
-                })
             ]));
             const audio = document.createElement('audio');
             audio.src = 'http://localhost:9696/' + path + '/' + bg;

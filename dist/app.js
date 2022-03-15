@@ -63,7 +63,7 @@ function initiateBackgroundMusic(propsmatching, propsplaying) {
 module.exports = { initiateBackgroundMusic };
 
 },{"./fungus":2}],2:[function(require,module,exports){
-const { close, pointer, border, playlistEven, playlistOdd, padside, musicname } = require('./styles');
+const { playlistEven, playlistOdd, musicname } = require('./styles');
 
 function setStyle(elem, ...styles) {
     for (const style of styles) {
@@ -123,12 +123,6 @@ function refreshMusic(props) {
             const even = i % 2 === 0;
             list.appendChild(l('li', [even ? playlistEven : playlistOdd], [
                 l('div', [musicname], [bg]),
-                l('span', [close, pointer, padside], ['X'], {
-                    click: function () {
-                        bgm.splice(i, 1);
-                        refreshMusic(props);
-                    }
-                })
             ]));
             const audio = document.createElement('audio');
             audio.src = 'http://localhost:9696/' + path + '/' + bg;
@@ -154,83 +148,66 @@ module.exports = {
 }
 },{"./styles":4}],3:[function(require,module,exports){
 const {
-    border, center, close, fullheight, mainbox, navbar, pad5, padside, playlist, pointer
+    border, close, fullheight, mainbox, navbar, pad5, padside, playlist, pointer
 } = require('./styles');
-const { l, muse, addMuseh } = require('./fungus');
+const { l } = require('./fungus');
 const { initiateBackgroundMusic } = require('./chessfun');
 
-const localmatchbgm = localStorage.getItem('matchbgm') || '[]';
-const localplaybgm = localStorage.getItem('playbgm') || '[]';
-const matchbgm = JSON.parse(localmatchbgm);
-const playbgm = JSON.parse(localplaybgm);
-const listMatch = l('ul', [playlist], []);
-const listBgm = l('ul', [playlist], []);
-const musicMatch = document.createElement('div');
-const musicBgm = document.createElement('div');
-
-const propsmatching = {
-    id: 'matchbgm',
-    bgm: matchbgm,
-    bgms: [],
-    list: listMatch,
-    music: musicMatch,
-    bbm: matchbgm,
-    path: 'matching',
-};
-const propsplaying = {
-    id: 'playbgm',
-    bgm: playbgm,
-    bgms: [],
-    list: listBgm,
-    music: musicBgm,
-    bbm: playbgm,
-    path: 'playing',
-};
-
-const inputMatch = muse(addMuseh(propsmatching));
-const inputBgm = muse(addMuseh(propsplaying));
-const app = l('div', [mainbox, border, pad5], [
-    l('div', [navbar], [
-        l('span', [], ['Chess BGM']),
-        l('span', [border, close, padside, pointer], ['X'], {
-            click: function () {
-                app.style.display = 'none';
-            }
-        })
-    ]),
-    l('div', [border, pad5, fullheight, { overflow: 'scroll' }], [
-        l('div', [], [
-            l('span', [], ['Matching']),
-            listMatch,
-            musicMatch,
-            l('div', [center], [
-                inputMatch,
-                l('span', [border, padside, pointer], ['+'], {
-                    click: function () {
-                        inputMatch.click();
-                    }
-                })
-            ]),
+Promise.all([fetch('http://localhost:9696/matching'), fetch('http://localhost:9696/playing')])
+.then(res => Promise.all(res.map(r => r.json())))
+.then(res => {
+    const [matchbgm, playbgm] = res;
+    const listMatch = l('ul', [playlist], []);
+    const listBgm = l('ul', [playlist], []);
+    const musicMatch = document.createElement('div');
+    const musicBgm = document.createElement('div');
+            
+    const propsmatching = {
+        id: 'matchbgm',
+        bgm: matchbgm,
+        bgms: [],
+        list: listMatch,
+        music: musicMatch,
+        bbm: matchbgm,
+        path: 'matching',
+    };
+    const propsplaying = {
+        id: 'playbgm',
+        bgm: playbgm,
+        bgms: [],
+        list: listBgm,
+        music: musicBgm,
+        bbm: playbgm,
+        path: 'playing',
+    };
+    
+    const app = l('div', [mainbox, border, pad5], [
+        l('div', [navbar], [
+            l('span', [], ['Chess BGM']),
+            l('span', [border, close, padside, pointer], ['X'], {
+                click: function () {
+                    app.style.display = 'none';
+                }
+            })
         ]),
-        l('div', [], [
-            l('span', [], ['Background']),
-            listBgm,
-            musicBgm,
-            l('div', [center], [
-                inputBgm,
-                l('span', [border, padside, pointer], ['+'], {
-                    click: function () {
-                        inputBgm.click();
-                    }
-                })
+        l('div', [border, pad5, fullheight, { overflow: 'scroll' }], [
+            l('div', [], [
+                l('span', [], ['Matching']),
+                listMatch,
+                musicMatch,
+            ]),
+            l('div', [], [
+                l('span', [], ['Background']),
+                listBgm,
+                musicBgm,
             ])
         ])
-    ])
-]);
+    ]);
 
-document.body.appendChild(app);
-
-initiateBackgroundMusic(propsmatching, propsplaying);
+    document.body.appendChild(app);
+    
+    initiateBackgroundMusic(propsmatching, propsplaying);
+});
 
 },{"./chessfun":1,"./fungus":2,"./styles":4}],4:[function(require,module,exports){
 const close = {
